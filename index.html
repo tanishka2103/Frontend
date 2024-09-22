@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JSON Input Form</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f0f0f0;
+        }
+        .container {
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+            background-color: #fff;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+        label {
+            font-weight: bold;
+            display: block;
+            margin: 10px 0;
+        }
+        textarea {
+            width: 100%;
+            height: 100px;
+            padding: 10px;
+            margin-bottom: 20px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-family: monospace;
+        }
+        button {
+            width: 100%;
+            padding: 10px;
+            background-color: #28a745;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #218838;
+        }
+        .error {
+            color: red;
+            margin: 10px 0;
+        }
+        .output {
+            margin-top: 20px;
+        }
+        .output h2 {
+            color: #333;
+        }
+        select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .response-container {
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Bajaj Finserv Health Dev Challenge</h1>
+        <form id="jsonForm">
+            <label for="jsonInput">Enter JSON Data:</label>
+            <textarea id="jsonInput" placeholder='{"data": ["A", "1", "c"]}'></textarea>
+            <button type="submit">Process Data</button>
+            <div class="error" id="errorMsg"></div>
+        </form>
+
+        <div id="responseSection" class="response-container" style="display: none;">
+            <h2>Select Data to Display:</h2>
+            <select id="dataSelect" multiple>
+                <option value="alphabets">Alphabets</option>
+                <option value="numbers">Numbers</option>
+                <option value="highest">Highest Lowercase Alphabet</option>
+            </select>
+            <div class="output" id="output"></div>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('jsonForm').addEventListener('submit', async function(event) {
+            event.preventDefault(); // Prevent form from submitting normally
+
+            const jsonData = document.getElementById('jsonInput').value;
+            const errorMsg = document.getElementById('errorMsg');
+            const responseSection = document.getElementById('responseSection');
+            const output = document.getElementById('output');
+
+            // Clear previous output and errors
+            errorMsg.innerHTML = '';
+            output.innerHTML = '';
+            responseSection.style.display = 'none';
+
+            // Validate JSON input
+            let parsedData;
+            try {
+                parsedData = JSON.parse(jsonData);
+            } catch (error) {
+                errorMsg.innerHTML = 'Invalid JSON format. Please correct it and try again.';
+                return;
+            }
+
+            // Make POST request to Flask backend
+            try {
+                const response = await fetch('https://backend-task-utp5.onrender.com/bfhl', { // Replace with your hosted Flask API link
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(parsedData)
+                });
+
+                if (!response.ok) {
+                    throw new Error('Server error occurred.');
+                }
+
+                const result = await response.json();
+
+                // Display the multi-select dropdown and handle user choice
+                responseSection.style.display = 'block';
+
+                document.getElementById('dataSelect').addEventListener('change', function() {
+                    output.innerHTML = ''; // Clear previous output
+                    const selectedOptions = Array.from(this.selectedOptions).map(option => option.value);
+
+                    if (selectedOptions.includes('alphabets')) {
+                        output.innerHTML += `<p><strong>Alphabets:</strong> ${result.alphabets.join(', ')}</p>`;
+                    }
+                    if (selectedOptions.includes('numbers')) {
+                        output.innerHTML += `<p><strong>Numbers:</strong> ${result.numbers.join(', ')}</p>`;
+                    }
+                    if (selectedOptions.includes('highest')) {
+                        output.innerHTML += `<p><strong>Highest Lowercase Alphabet:</strong> ${result.highest_lowercase_alphabet.join(', ')}</p>`;
+                    }
+                });
+            } catch (error) {
+                errorMsg.innerHTML = 'An error occurred while processing the request. Please try again.';
+            }
+        });
+    </script>
+</body>
+</html>
